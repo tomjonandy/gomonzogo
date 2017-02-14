@@ -14,12 +14,14 @@ var client = &http.Client{
 	Timeout: time.Duration(10 * time.Second),
 }
 
-type Accounts struct {
-	Accounts []struct {
-		ID          string    `json:"id"`
-		Created     time.Time `json:"created"`
-		Description string    `json:"description"`
-	} `json:"accounts"`
+type Account struct {
+	ID          string    `json:"id"`
+	Created     time.Time `json:"created"`
+	Description string    `json:"description"`
+}
+
+type AccountsResponse struct {
+	Accounts []Account `json:"accounts"`
 }
 
 type Transactions struct {
@@ -53,7 +55,7 @@ type Transactions struct {
 	} `json:"transactions"`
 }
 
-func GetAccounts() Accounts {
+func GetAccounts() []Account {
 	req, err := http.NewRequest("GET", "https://api.monzo.com/accounts", nil)
 	req.Header.Add("Authorization", "Bearer "+ACCESSTOKEN)
 
@@ -61,15 +63,15 @@ func GetAccounts() Accounts {
 
 	if err != nil {
 		fmt.Println(err)
-		return Accounts{}
+		return []Account{}
 	}
 
 	defer res.Body.Close()
 
-	body := Accounts{}
+	body := AccountsResponse{}
 
 	json.NewDecoder(res.Body).Decode(&body)
-	return body
+	return body.Accounts
 }
 
 func GetTransactions(accountID string) Transactions {
@@ -93,14 +95,14 @@ func GetTransactions(accountID string) Transactions {
 
 func main() {
 	accounts := GetAccounts()
-	for i := 0; i < len(accounts.Accounts); i++ {
-		fmt.Printf("[%d] %s\n", i, accounts.Accounts[i].Description)
+	for i := 0; i < len(accounts); i++ {
+		fmt.Printf("[%d] %s\n", i, accounts[i].Description)
 	}
 
 	fmt.Println("Enter number...")
 	var accountNumber int = 0
 	fmt.Scanln(&accountNumber)
-	transactions := GetTransactions(accounts.Accounts[accountNumber].ID)
+	transactions := GetTransactions(accounts[accountNumber].ID)
 	for i := 0; i < len(transactions.Transactions); i++ {
 		fmt.Printf("[%d]\t%d\t%s\n", i, transactions.Transactions[i].Amount, transactions.Transactions[i].Description)
 	}
