@@ -10,8 +10,19 @@ import (
 
 var ACCESSTOKEN = os.Getenv("MONZOACCESS")
 
-var client = &http.Client{
-	Timeout: time.Duration(10 * time.Second),
+type MyClient struct {
+	http.Client
+}
+
+func (client *MyClient) DoWithHeader(req *http.Request) (*http.Response, error) {
+	req.Header.Add("Authorization", "Bearer "+ACCESSTOKEN)
+	return client.Do(req)
+}
+
+var client = &MyClient {
+	http.Client {
+		Timeout: time.Duration(10 * time.Second),
+	},
 }
 
 type Account struct {
@@ -59,10 +70,8 @@ type TransactionsResponse struct {
 
 func GetAccounts() []Account {
 	req, err := http.NewRequest("GET", "https://api.monzo.com/accounts", nil)
-	req.Header.Add("Authorization", "Bearer "+ACCESSTOKEN)
 
-	res, err := client.Do(req)
-
+	res, err := client.DoWithHeader(req)
 	if err != nil {
 		fmt.Println(err)
 		return []Account{}
@@ -78,9 +87,8 @@ func GetAccounts() []Account {
 
 func GetTransactions(accountID string) []Transaction {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.monzo.com/transactions?account_id=%s", accountID), nil)
-	req.Header.Add("Authorization", "Bearer "+ACCESSTOKEN)
 
-	res, err := client.Do(req)
+	res, err := client.DoWithHeader(req)
 
 	if err != nil {
 		fmt.Println(err)
