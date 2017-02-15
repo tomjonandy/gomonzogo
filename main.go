@@ -68,6 +68,18 @@ type TransactionsResponse struct {
 	Transactions []Transaction `json:"transactions"`
 }
 
+type BalanceResponse struct {
+	Balance int `json:"balance"`
+	Currency string `json:"currency"`
+	SpendToday int `json:"spend_today"`
+	LocalCurrency string `json:"local_currency"`
+	LocalExchangeRate int `json:"local_exchange_rate"`
+	LocalSpend []struct {
+		SpendToday int `json:"spend_today"`
+		Currency string `json:"currency"`
+	} `json:"local_spend"`
+}
+
 func GetAccounts() []Account {
 	req, err := http.NewRequest("GET", "https://api.monzo.com/accounts", nil)
 
@@ -83,6 +95,23 @@ func GetAccounts() []Account {
 
 	json.NewDecoder(res.Body).Decode(&body)
 	return body.Accounts
+}
+
+func GetBalance(accountID string) int {
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.monzo.com/balance?account_id=%s", accountID), nil)
+
+	res, err := client.DoWithHeader(req)
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+
+	defer res.Body.Close()
+
+	body := BalanceResponse{}
+
+	json.NewDecoder(res.Body).Decode(&body)
+	return body.Balance
 }
 
 func GetTransactions(accountID string) []Transaction {
@@ -106,7 +135,7 @@ func GetTransactions(accountID string) []Transaction {
 func main() {
 	accounts := GetAccounts()
 	for i := 0; i < len(accounts); i++ {
-		fmt.Printf("[%d] %s\n", i, accounts[i].Description)
+		fmt.Printf("[%d] %s\t%d\n", i, accounts[i].Description, GetBalance(accounts[i].ID))
 	}
 
 	fmt.Println("Enter number...")
